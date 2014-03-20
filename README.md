@@ -13,5 +13,4 @@ It requires you add a little code to your sidebar.php to display the sidebar:
 By default, the sidebar selector is added to pages and posts. If you want to add it to other post-types, you need to add the following code to your themes functions.php
 
     $sidebar_posttypes = array( 'page', 'post','yourcustomposttypename' ); 
-
     $sidebar_generator = new Veuse_Custom_Sidebar(  $sidebar_posttypes  );
