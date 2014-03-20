@@ -13,10 +13,8 @@ It requires you add a little code to your sidebar.php to display the sidebar:
 By default, the sidebar selector is added to pages and posts. If you want to add it to other post-types, you need to add the following code to your themes functions.php
 
     function yourtheme_sidebars_screens(){
-	
 	    $screens = array( 'post', 'page', 'yourcustomposttypename' );
 	    return $screens;
-	
     }
 
     add_filter('veuse_sidebars_screens','yourtheme_sidebars_screens');
