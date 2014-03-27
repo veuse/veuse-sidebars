@@ -17,14 +17,17 @@ class Veuse_Custom_Sidebar{
 	private $meta_id = 'veuse-sidebar';
 	private $meta_key = 'veuse-sidebar-meta';
 	private $keys = array('_page_sidebar');
- 
- 
+	
+	private $screens = NULL;
+	
 	/**
 	 * Initiate Wordpress Hooks
 	 * @return void
 	 */
-	public function __construct(){
- 
+	public function __construct($screens){
+				
+		$this->screens = $screens;
+	
 		add_action('init', array( $this, 'register_sidebar' ));
 		add_action('init', array( $this, 'load_sidebars' ));
  
@@ -38,7 +41,20 @@ class Veuse_Custom_Sidebar{
 		
 		add_shortcode('veuse_sidebar', array(&$this,'veuse_sidebar'));
 		
+		
+		
+			
 	}
+	
+	public function veuse_sidebars_set_screens(){
+					 
+		return $this->screens;
+		
+	}
+	
+	
+	
+
  
 	/**
 	 * Register Sidebar Poststype
@@ -83,87 +99,88 @@ class Veuse_Custom_Sidebar{
 	}
 	
 	
-		/* Shortcode
-		============================================= */
-		
-		public function veuse_sidebar( $atts, $content = null ) {
-		
-				 extract(shortcode_atts(array(
-						'id' 	=> ''
-		
-				    ), $atts));
+	/* Shortcode
+	============================================= */
+	
+	public function veuse_sidebar( $atts, $content = null ) {
+	
+			 extract(shortcode_atts(array(
+					'id' 	=> ''
+	
+			    ), $atts));
+	
+			
+				ob_start();
+	
+				dynamic_sidebar('veuse-sidebar-'.$id);
+
+				$content = ob_get_contents();
+
+				ob_end_clean();
+				
+				wp_reset_query();
+	
+				return $content;
+	
+	
+	}
+	
+	
+	function veuse_sidebars_custom_columns($column, $post_id) {
+	
+		global $post;
+				
+		switch ($column) {
+		 	
+		 		
+		 	
+		 		case 'title' :
+		 	
+					echo get_the_title();
+					break;
+			 	
+
+				case 'id' :
+			 	
+				 	echo 'veuse-sidebar-'.get_the_ID();
+					break;	
+				
+				
+				case 'slug' :
+			 	
+				 	echo $post->post_name;
+					break;
+				
+				case 'shortcode' :
+			 	
+				 	echo '<code>[veuse_sidebar id="'.get_the_ID().'"]</code>';
+					
+					break;
+				
 		
 				
-					ob_start();
+		}			
+				
+	}
 		
-					dynamic_sidebar('veuse-sidebar-'.$id);
-
-					$content = ob_get_contents();
-
-					ob_end_clean();
-					
-					wp_reset_query();
-		
-					return $content;
-		
-		
-		}
-	
-	
-		function veuse_sidebars_custom_columns($column, $post_id) {
-		
-			global $post;
-					
-			switch ($column) {
-			 	
-			 		
-			 	
-			 		case 'title' :
-			 	
-						echo get_the_title();
-						break;
-				 	
-	
-					case 'id' :
-				 	
-					 	echo 'veuse-sidebar-'.get_the_ID();
-						break;	
-					
-					
-					case 'slug' :
-				 	
-					 	echo $post->post_name;
-						break;
-					
-					case 'shortcode' :
-				 	
-					 	echo '<code>[veuse_sidebar id="'.get_the_ID().'"]</code>';
-						
-						break;
-					
-			
-					
-			}			
-					
-		}
-		
-		function veuse_sidebars_columns($columns){
-					
-			$columns = array(
-					"cb" => "<input type=\"checkbox\" />",
-					"title" => __("Sidebar name","veuse-sidebars"),
-					"slug" => __("Slug","veuse-sidebars"),
-					"id" => __("Sidebar ID","veuse-sidebars"),
-					"shortcode" => __("Shortcode","veuse-sidebars")
-			);
-			return $columns;
-		}
+	function veuse_sidebars_columns($columns){
+				
+		$columns = array(
+				"cb" => "<input type=\"checkbox\" />",
+				"title" => __("Sidebar name","veuse-sidebars"),
+				"slug" => __("Slug","veuse-sidebars"),
+				"id" => __("Sidebar ID","veuse-sidebars"),
+				"shortcode" => __("Shortcode","veuse-sidebars")
+		);
+		return $columns;
+	}
 	
  
 	/**
 	 * Register Sidebars with Wordpress
 	 * @return void
 	 */
+	 
 	public function load_sidebars(){
 		$sidebars = new WP_Query(array(
 			'post_type' => 'sidebar'
@@ -171,8 +188,7 @@ class Veuse_Custom_Sidebar{
  
 		if($sidebars->have_posts()){
 			while($sidebars->have_posts()){ 
-				$sidebars->the_post();
- 
+				$sidebars->the_post(); 
 				global $post;
 				
 				register_sidebar( array(
@@ -195,15 +211,16 @@ class Veuse_Custom_Sidebar{
 	public function setup_metabox(){
 		add_action( 'add_meta_boxes', array($this, 'add_metabox' ));
 	}
+	
  
 	/**
 	 * Add Sidebar Meta box
 	 * @return  void
 	 */
 	 function add_metabox(){
-		
-		 $screens = array( 'post', 'page' );
-		 
+	
+		$screens = $this->veuse_sidebars_set_screens();
+		   	 		 
 		 foreach ( $screens as $screen ) {
 			
 			add_meta_box(
@@ -312,10 +329,36 @@ class Veuse_Custom_Sidebar{
 			elseif ( '' == $name && $value )
 				delete_post_meta( $post_id, $key, $value );
 		}
-	}
+	}	
 }
  
-new Veuse_Custom_Sidebar();
+new Veuse_Custom_Sidebar( array('page','post') );
 
-//require_once('meta.php');
+//require_once('plugin-options.php');
+
+function veuse_sidebars_contextual_help( $contextual_help, $screen_id, $screen ) { 
+    
+    if ( 'sidebar' == $screen->id ) {
+    
+    	// Remove default tabs
+		$screen->remove_help_tabs();
+    
+        $contextual_help = '<h2>Sidebar Generator</h2>
+        <p>Simply give your sidebar a title and publish. </p> 
+        <p>You will now have a new widgetized sidebar you can populate with widgets in Appearance > Widgets.</p>
+         <p>When editing or creating a new page or post, you can select the sidebar from a meta-panel.</p>';
+
+    } elseif ( 'edit-sidebar' == $screen->id ) {
+		
+		// Remove default tabs
+		$screen->remove_help_tabs();
+    
+        $contextual_help = '<h2>Adding Sidebars</h2>
+        <p>Click on Add Sidebar to create a new widgetized sidebar</p>';
+
+    }
+    return $contextual_help;
+}
+add_action( 'contextual_help', 'veuse_sidebars_contextual_help', 10, 3 );
+
 ?>
